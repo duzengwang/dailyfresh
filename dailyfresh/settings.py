@@ -43,6 +43,7 @@ INSTALLED_APPS = (
     'tt_order',
     'tt_goods',
     'tinymce',
+    'haystack',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -112,3 +113,65 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 AUTH_USER_MODEL = 'tt_user.User'
+STATICFILES_DIRS = [os.path.join(BASE_DIR,'static')]
+AUTH_USER_MODEL ='tt_user.User'#auth.User
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.163.com'
+EMAIL_PORT = 25
+#发送邮件的邮箱
+EMAIL_HOST_USER = 'takydu@163.com'
+#在邮箱中设置的客户端授权密码
+EMAIL_HOST_PASSWORD = 'dzw18722099512'
+#收件人看到的发件人
+EMAIL_FROM = '天天生鲜<takydu@163.com>'
+
+# 缓存
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/5",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+
+# Session
+# http://django-redis-chs.readthedocs.io/zh_CN/latest/#session-backend
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+
+LOGIN_URL = '/user/login'
+#指定保存文件的类，在这个类中，可以编写上传文件到Fdfs的代码
+DEFAULT_FILE_STORAGE = 'utils.storage.FdfsStorage'
+#指定fdfs文件服务器读取文件的路径
+FDFS_SERVER='http://127.0.0.1:8888/'
+#指定fdfs配置文件
+FDFS_CLIENT=os.path.join(BASE_DIR,'utils/fdfs_client.conf')
+
+#设置富文本编辑器的样式
+TINYMCE_DEFAULT_CONFIG = {
+  'theme': 'advanced', # 丰富样式
+  'width': 600,
+  'height': 400,
+}
+# 指定生成静态文件的路径
+GENERATE_HTML = os.path.join(BASE_DIR, 'static/html')
+
+# 配置搜索引擎后端
+HAYSTACK_CONNECTIONS = {
+  'default': {
+      # 使用whoosh引擎：提示，如果不需要使用jieba框架实现分词，就使用whoosh_backend
+      'ENGINE': 'haystack.backends.whoosh_cn_backend.WhooshEngine',
+      # 索引文件路径
+      'PATH': os.path.join(BASE_DIR, 'whoosh_index'),
+  }
+}
+# 当添加、修改、删除数据时，自动生成索引
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+#设置结果显示页面，每页显示多少条数据
+HAYSTACK_SEARCH_RESULTS_PER_PAGE=1

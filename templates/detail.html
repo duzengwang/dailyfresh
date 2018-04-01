@@ -1,0 +1,175 @@
+{% extends 'base_goods.html' %}
+
+
+{% block body2 %}
+
+    <div class="navbar_con">
+        <div class="navbar clearfix">
+            <div class="subnav_con fl">
+                <h1>全部商品分类</h1>
+                <span></span>
+                <ul class="subnav">
+                    {% for category in category_list %}
+                        <li><a href="/list{{ category.id }}" class="{{ category.logo }}">{{ category.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <ul class="navlist fl">
+                <li><a href="index">首页</a></li>
+                <li class="interval">|</li>
+                <li><a href="/">手机生鲜</a></li>
+                <li class="interval">|</li>
+                <li><a href="/">抽奖</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="breadcrumb">
+        <a href="#">全部分类</a>
+        <span>></span>
+        <a href="#">{{ sku.category.name }}</a>
+        <span>></span>
+        <a href="#">商品详情</a>
+    </div>
+
+    <div class="goods_detail_con clearfix">
+        <div class="goods_detail_pic fl"><img src="{{ sku.default_image.url }}"></div>
+
+        <div class="goods_detail_list fr">
+            <h3>{{ sku.name }}</h3>
+            <p>{{ sku.title }}</p>
+            <div class="prize_bar">
+                <span class="show_pirze">¥<em>{{ sku.price }}</em></span>
+                <span class="show_unit">单  位：{{ sku.unit }}</span>
+            </div>
+            <div class="total1">规格：
+                {% for other in other_list %}
+                    {% if other.id == sku.id %}
+                        <em>{{ other.price }}/{{ other.unit }}</em>&nbsp;
+                    {% else %}
+                        <a href="/{{ other.id }}">{{ other.price }}/{{ other.unit }}</a>&nbsp;
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="goods_num clearfix">
+                <div class="num_name fl">数 量：</div>
+                <div class="num_add fl">
+                    <input type="hidden" id="sku_id" value="{{ sku.id }}">
+                    <input type="text" class="num_show fl" value="1">
+                    <a href="javascript:;" class="add fr">+</a>
+                    <a href="javascript:;" class="minus fr">-</a>
+                </div>
+            </div>
+            <div class="total">总价：<em>{{ sku.price }}元</em></div>
+            <div class="operate_btn">
+                <a href="javascript:;" class="buy_btn">立即购买</a>
+                <a href="javascript:;" class="add_cart" id="add_cart">加入购物车</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main_wrap clearfix">
+        <div class="l_wrap fl clearfix">
+            <div class="new_goods">
+                <h3>新品推荐</h3>
+                <ul>
+                    {% for new in new_list %}
+                        <li>
+                            <a href="/{{ new.id }}"><img src="{{ new.default_image.url }}"></a>
+                            <h4><a href="/{{ new.id }}">{{ new.name }}</a></h4>
+                            <div class="prize">￥{{ new.price }}</div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="r_wrap fr clearfix">
+            <ul class="detail_tab clearfix">
+                <li class="active">商品介绍</li>
+                <li>评论</li>
+            </ul>
+
+            <div class="tab_content">{{ sku.goods.desc|safe }}</div>
+
+        </div>
+    </div>
+    {% csrf_token %}
+    <div class="add_jump"></div>
+    <script type="text/javascript">
+        //获取“加入购物车”按钮的x、y坐标
+        var $add_x = $('#add_cart').offset().top;
+        var $add_y = $('#add_cart').offset().left;
+        //获取“购物车数量”的x、y坐标
+        var $to_x = $('#show_count').offset().top;
+        var $to_y = $('#show_count').offset().left;
+
+        $('#add_cart').click(function () {
+            //$.get();//如果是查询数据使用get请求方式
+            //如果是添加、修改、删除数据使用post请求方式
+            $.post('/cart/add',
+                {
+                    'sku_id': $('#sku_id').val(),
+                    'count': $('.num_show').val(),
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',//满足django的csrf验证
+                },
+                function (data) {
+                    if (data.status == 1) {
+                        $(".add_jump").css({'left': $add_y + 80, 'top': $add_x + 10, 'display': 'block'});
+
+                        $(".add_jump").stop().animate({
+                                'left': $to_y + 7,
+                                'top': $to_x + 7
+                            },
+                            "slow", function () {
+                                $(".add_jump").fadeOut('fast', function () {
+                                    $('#show_count').html(data.total_count);
+                                });
+                            });
+                    } else if (data.status == 2) {
+                        //商品编号不存在
+                        alert('商品编号不存在');
+                    } else if (data.status == 3) {
+                        //数量不正确
+                        alert('数量不正确');
+                    }
+                });
+        });
+
+        //改变数量，计算总价
+        $('.num_show').blur(function () {
+            var price = parseFloat($('.show_pirze>em').text());
+            var num = parseInt($(this).val());
+            //验证num是数字 is not a number
+            if (isNaN(num)) {
+                num = 1;
+            }
+            //数量不能小于1
+            if (num < 1) {
+                num = 1;
+            }
+            //数量不能大于5
+            if (num > 5) {
+                num = 5;
+            }
+            //将验证后的值显示到文本框
+            $(this).val(num);
+            //计算总价
+            var total = num * price;
+            $('.total>em').text(total.toFixed(2) + '元');
+        });
+        //数量+
+        $('.add').click(function () {
+            var num = parseInt($('.num_show').val());
+            num++;
+            $('.num_show').val(num).blur();//使用代码触发事件
+        });
+        //数量-
+        $('.minus').click(function () {
+            var num = parseInt($('.num_show').val());
+            num--;
+            $('.num_show').val(num).blur();//使用代码触发事件
+        });
+    </script>
+
+{% endblock body2 %}
